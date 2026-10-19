@@ -1,4 +1,17 @@
-// --- Időjárás Modul (Open-Meteo API) ---
+// --- Lejátszási Lista Váltó Függvény ---
+function switchPlaylist(playlistId, btnElement) {
+    const iframe = document.getElementById('spotify-player');
+    if (iframe) {
+        iframe.src = `https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator&si=13212ef0c4ea4c97`;
+    }
+    
+    document.querySelectorAll('.playlist-btn').forEach(btn => btn.classList.remove('active'));
+    if (btnElement) {
+        btnElement.classList.add('active');
+    }
+}
+
+// --- Időjárás Modul (Open-Meteo API cache-bustinggal) ---
 let currentCity = localStorage.getItem('selectedCity') || 'Budapest';
 let lastWeatherCode = 0;
 
@@ -61,7 +74,8 @@ async function fetchWeather(cityName) {
         const lon = location.longitude;
         const displayName = location.name;
 
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
+        const cacheBuster = `&_t=${new Date().getTime()}`;
+        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto${cacheBuster}`);
         const weatherData = await weatherRes.json();
 
         document.getElementById('city-name').textContent = displayName;
@@ -105,21 +119,24 @@ function handleCityKeyPress(event) {
     }
 }
 
-// --- Google Naptár Integráció ---
+// --- Google Naptár Integráció (Mai és Holnapi teendők) ---
 const GOOGLE_API_KEY = 'AIzaSyCePg1gAR4oxW2YfNh9VWFZigePMabxrG0';
 const CALENDAR_ID = '21251052439dd05c95559932f6f01d81b2df212f34ecb5d04e8a4f92d02d2af5@group.calendar.google.com';
 
-let cachedEvents = [];
+let cachedTodayEvents = [];
+let cachedTomorrowEvents = [];
 
 async function fetchGoogleCalendarEvents() {
-    const listEl = document.getElementById('tasks-list');
-    const countEl = document.getElementById('task-count');
+    const listTodayEl = document.getElementById('tasks-list-today');
+    const countTodayEl = document.getElementById('task-count-today');
+    const listTomorrowEl = document.getElementById('tasks-list-tomorrow');
+    const countTomorrowEl = document.getElementById('task-count-tomorrow');
 
     const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2, 0, 0, 0);
 
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${GOOGLE_API_KEY}&timeMin=${startOfDay}&timeMax=${endOfDay}&singleEvents=true&orderBy=startTime`;
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${GOOGLE_API_KEY}&timeMin=${startOfToday.toISOString()}&timeMax=${endOfTomorrow.toISOString()}&singleEvents=true&orderBy=startTime`;
 
     try {
         const response = await fetch(url);
@@ -127,56 +144,82 @@ async function fetchGoogleCalendarEvents() {
 
         if (data.error) {
             console.error('API hiba:', data.error.message);
-            listEl.innerHTML = '<div class="task-empty">Naptár hiba (Ellenőrizd a Naptár ID-t)</div>';
+            listTodayEl.innerHTML = '<div class="task-empty">Naptár hiba</div>';
+            listTomorrowEl.innerHTML = '<div class="task-empty">Naptár hiba</div>';
             return;
         }
 
         const events = data.items || [];
-        cachedEvents = [];
+        cachedTodayEvents = [];
+        cachedTomorrowEvents = [];
         
-        listEl.innerHTML = '';
-        countEl.textContent = `${events.length} db`;
+        listTodayEl.innerHTML = '';
+        listTomorrowEl.innerHTML = '';
 
-        if (events.length === 0) {
-            listEl.innerHTML = '<div class="task-empty">Nincs mára esemény a naptárban</div>';
-            return;
-        }
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const tomorrowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        const dayAfterTomorrowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2);
 
         events.forEach(event => {
-            let timeStr = 'Egész nap';
+            let eventDate;
             if (event.start.dateTime) {
-                const startTime = new Date(event.start.dateTime);
-                timeStr = startTime.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+                eventDate = new Date(event.start.dateTime);
+            } else if (event.start.date) {
+                const parts = event.start.date.split('-');
+                eventDate = new Date(parts[0], parts[1] - 1, parts[2]);
             }
 
-            cachedEvents.push({
+            let timeStr = 'Egész nap';
+            if (event.start.dateTime) {
+                timeStr = eventDate.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const eventObj = {
                 summary: event.summary || 'Névtelen esemény',
                 timeStr: timeStr
-            });
+            };
 
             const item = document.createElement('div');
             item.className = 'task-item';
             item.innerHTML = `
                 <span class="task-time">${timeStr}</span>
-                <span class="task-title">${escapeHtml(event.summary || 'Névtelen esemény')}</span>
+                <span class="task-title">${escapeHtml(eventObj.summary)}</span>
             `;
-            listEl.appendChild(item);
+
+            if (eventDate >= todayMidnight && eventDate < tomorrowMidnight) {
+                cachedTodayEvents.push(eventObj);
+                listTodayEl.appendChild(item);
+            } else if (eventDate >= tomorrowMidnight && eventDate < dayAfterTomorrowMidnight) {
+                cachedTomorrowEvents.push(eventObj);
+                listTomorrowEl.appendChild(item);
+            }
         });
+
+        countTodayEl.textContent = `${cachedTodayEvents.length} db`;
+        countTomorrowEl.textContent = `${cachedTomorrowEvents.length} db`;
+
+        if (cachedTodayEvents.length === 0) {
+            listTodayEl.innerHTML = '<div class="task-empty">Nincs mára esemény</div>';
+        }
+        if (cachedTomorrowEvents.length === 0) {
+            listTomorrowEl.innerHTML = '<div class="task-empty">Nincs holnapra esemény</div>';
+        }
 
     } catch (error) {
         console.error('Hiba a Google Naptár lekérésekor:', error);
-        listEl.innerHTML = '<div class="task-empty">Sikertelen kapcsolódás</div>';
+        listTodayEl.innerHTML = '<div class="task-empty">Sikertelen kapcsolódás</div>';
+        listTomorrowEl.innerHTML = '<div class="task-empty">Sikertelen kapcsolódás</div>';
     }
 }
 
-// --- Hírek Modul (HVG RSS Feed API) ---
+// --- Hírek Modul (INDEX.HU RSS Feed API - 5 Szalagcím) ---
 let cachedNews = [];
 
 async function fetchNews() {
     const listEl = document.getElementById('news-list');
     const modalContentEl = document.getElementById('news-modal-content');
     
-    const rssUrl = 'https://hvg.hu/rss';
+    const rssUrl = 'https://index.hu/24ora/rss/';
     const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
     try {
@@ -190,12 +233,10 @@ async function fetchNews() {
             modalContentEl.innerHTML = '';
 
             cachedNews.forEach((item, index) => {
-                if (index < 3) {
-                    const newsDiv = document.createElement('div');
-                    newsDiv.className = 'news-item-wide';
-                    newsDiv.textContent = item.title;
-                    listEl.appendChild(newsDiv);
-                }
+                const newsDiv = document.createElement('div');
+                newsDiv.className = 'news-item-wide';
+                newsDiv.textContent = item.title;
+                listEl.appendChild(newsDiv);
 
                 const modalDiv = document.createElement('div');
                 modalDiv.className = 'news-modal-item';
@@ -242,8 +283,34 @@ if (SpeechRecognition) {
         const transcript = event.results[lastResultIndex][0].transcript.toLowerCase();
         console.log('Meghallott szöveg:', transcript);
 
-        if (transcript.includes('teendő') || transcript.includes('naptár') || transcript.includes('feladat')) {
-            speakTasks();
+        // Zenelejátszó & Lejátszási lista parancsok
+        if (transcript.includes('zene indítás') || transcript.includes('lejátszás') || transcript.includes('zene start')) {
+            controlSpotify('play');
+            speakText('Zene elindítva.');
+        } 
+        else if (transcript.includes('zene állj') || transcript.includes('zene pauza') || transcript.includes('állítsd meg a zenét')) {
+            controlSpotify('pause');
+            speakText('Zene megállítva.');
+        }
+        else if (transcript.includes('chill zene') || transcript.includes('chill lista')) {
+            switchPlaylist('3eiBcxJpxfbc4s7Qi9IXru', document.querySelectorAll('.playlist-btn')[0]);
+            speakText('Chill lista kiválasztva.');
+        }
+        else if (transcript.includes('spa zene') || transcript.includes('spa lista')) {
+            switchPlaylist('6Yyg1V5pohpj9CFY4OW2bX', document.querySelectorAll('.playlist-btn')[1]);
+            speakText('Spa lista kiválasztva.');
+        }
+        else if (transcript.includes('lofi zene') || transcript.includes('lofi lista')) {
+            switchPlaylist('37i9dQZF1DXkWgt9O6q3Il', document.querySelectorAll('.playlist-btn')[2]);
+            speakText('Lofi lista kiválasztva.');
+        }
+        // Holnapi teendők
+        else if (transcript.includes('holnapi teendő') || transcript.includes('holnapi naptár') || transcript.includes('holnapi feladat') || transcript.includes('mi lesz holnap')) {
+            speakTomorrowTasks();
+        } 
+        // Mai teendők (vagy általános teendő kérés)
+        else if (transcript.includes('mai teendő') || transcript.includes('mai naptár') || transcript.includes('mai feladat') || transcript.includes('mi van ma') || transcript.includes('teendő') || transcript.includes('naptár') || transcript.includes('feladat')) {
+            speakTodayTasks();
         } 
         else if (transcript.includes('időjárás') || transcript.includes('idő') || transcript.includes('kint')) {
             speakWeather();
@@ -275,6 +342,15 @@ if (SpeechRecognition) {
             }
         }
     };
+}
+
+function controlSpotify(action) {
+    const iframe = document.getElementById('spotify-player');
+    if (!iframe) return;
+    iframe.focus();
+    if (action === 'play' || action === 'pause') {
+        iframe.contentWindow.postMessage({ command: 'toggle' }, '*');
+    }
 }
 
 function toggleVoiceControl() {
@@ -312,12 +388,24 @@ function speakText(text) {
     }
 }
 
-function speakTasks() {
-    if (cachedEvents.length === 0) {
+function speakTodayTasks() {
+    if (cachedTodayEvents.length === 0) {
         speakText('A mai napra nincsenek események a naptárban.');
     } else {
-        let speech = `A mai napra ${cachedEvents.length} esemény van feljegyezve. `;
-        cachedEvents.forEach((ev, idx) => {
+        let speech = `A mai napra ${cachedTodayEvents.length} esemény van feljegyezve. `;
+        cachedTodayEvents.forEach((ev, idx) => {
+            speech += `${idx + 1}-es esemény: ${ev.summary}, időpont: ${ev.timeStr}. `;
+        });
+        speakText(speech);
+    }
+}
+
+function speakTomorrowTasks() {
+    if (cachedTomorrowEvents.length === 0) {
+        speakText('A holnapi napra nincsenek események a naptárban.');
+    } else {
+        let speech = `A holnapi napra ${cachedTomorrowEvents.length} esemény van feljegyezve. `;
+        cachedTomorrowEvents.forEach((ev, idx) => {
             speech += `${idx + 1}-es esemény: ${ev.summary}, időpont: ${ev.timeStr}. `;
         });
         speakText(speech);
@@ -375,7 +463,7 @@ function speakNews() {
     if (cachedNews.length === 0) {
         speakText('A hírek jelenleg nem érhetők el.');
     } else {
-        let speech = 'A legfrissebb hírek a következők: ';
+        let speech = 'A legfrissebb hírek az Indexről: ';
         cachedNews.slice(0, 3).forEach((item, index) => {
             speech += `${index + 1}. hír: ${item.title}. `;
         });
@@ -517,17 +605,6 @@ function updateLightsSummary() {
     }
 }
 
-function toggleDevice(card) {
-    card.classList.toggle('active');
-    const statusText = card.querySelector('.status-text');
-
-    if (card.classList.contains('active')) {
-        statusText.textContent = "Bekapcsolva";
-    } else {
-        statusText.textContent = "Kikapcsolva";
-    }
-}
-
 function updateDateTime() {
     const now = new Date();
     
@@ -557,7 +634,7 @@ fetchGoogleCalendarEvents();
 fetchNews();
 fetchRoomTemperatures();
 
-// Naptár automatikus frissítése 1 másodpercenként
+// Naptár automatikus frissítése 5 másodpercenként
 setInterval(fetchGoogleCalendarEvents, 1000);
 // Hírek frissítése 15 percenként
 setInterval(fetchNews, 900000);
