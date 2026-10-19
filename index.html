@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Okos Otthon Dashboard</title>
+    <title>Krisztina & Tibor otthona</title>
     <!-- FontAwesome ikonok -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Saját CSS stíluslap -->
@@ -29,7 +29,71 @@
     </header>
 
     <main class="dashboard-grid">
-        <!-- 1. sor, 1. oszlop: iOS Stílusú Időjárás Widget -->
+        <!-- 1. Hőmérsékletek Kártya -->
+        <div class="device-card temperature-card">
+            <div class="device-icon">
+                <i class="fa-solid fa-temperature-half"></i>
+            </div>
+            <div class="device-info">
+                <h3>Hőmérsékletek</h3>
+            </div>
+            <div class="temp-rooms-list">
+                <div class="temp-room-item">
+                    <span>Nappali</span>
+                    <span id="temp-nappali">22.5 °C</span>
+                </div>
+                <div class="temp-room-item">
+                    <span>Hálószoba</span>
+                    <span id="temp-haloszoba">20.0 °C</span>
+                </div>
+                <div class="temp-room-item">
+                    <span>Vendégszoba</span>
+                    <span id="temp-vendegszoba">21.0 °C</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Lámpák Kártya (Morphing animációval) -->
+        <div class="device-card light-trigger-card" id="lights-trigger-card" onclick="expandLightsCard()">
+            <div class="device-icon">
+                <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <div class="device-info">
+                <h3>Lámpák</h3>
+                <p id="lights-summary-status">Minden lámpa lekapcsolva</p>
+            </div>
+        </div>
+
+        <!-- 3. Két oszlop széles Google Naptár Teendők (Mai és Holnapi) -->
+        <div class="tasks-card-wide">
+            <div class="tasks-wide-container">
+                <!-- Bal oldal: Mai teendők -->
+                <div class="tasks-column">
+                    <div class="tasks-header">
+                        <h3><i class="fa-solid fa-calendar-day"></i> Mai teendők</h3>
+                        <span id="task-count-today">0 db</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-today">
+                        <div class="task-loading">Betöltés...</div>
+                    </div>
+                </div>
+
+                <div class="tasks-divider"></div>
+
+                <!-- Jobb oldal: Holnapi teendők -->
+                <div class="tasks-column">
+                    <div class="tasks-header">
+                        <h3><i class="fa-solid fa-calendar-plus"></i> Holnapi teendők</h3>
+                        <span id="task-count-tomorrow">0 db</span>
+                    </div>
+                    <div class="tasks-list" id="tasks-list-tomorrow">
+                        <div class="task-loading">Betöltés...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. iOS Stílusú Időjárás Widget -->
         <div class="weather-card" id="weather-widget">
             <div class="weather-header">
                 <div class="location-container">
@@ -72,82 +136,35 @@
             </div>
         </div>
 
-        <!-- 1. sor, 2. oszlop: Lámpák Kártya (Morphing animációval) -->
-        <div class="device-card light-trigger-card" id="lights-trigger-card" onclick="expandLightsCard()">
-            <div class="device-icon">
-                <i class="fa-solid fa-lightbulb"></i>
+        <!-- 5. Spotify Zenelejátszó Kártya -->
+        <div class="music-card">
+            <div class="music-playlist-selector">
+                <button class="playlist-btn active" onclick="switchPlaylist('3eiBcxJpxfbc4s7Qi9IXru', this)">CHILL</button>
+                <button class="playlist-btn" onclick="switchPlaylist('6Yyg1V5pohpj9CFY4OW2bX', this)">SPA</button>
+                <button class="playlist-btn" onclick="switchPlaylist('37i9dQZF1DXkWgt9O6q3Il', this)">Lofi</button>
             </div>
-            <div class="device-info">
-                <h3>Lámpák</h3>
-                <p id="lights-summary-status">Minden lámpa lekapcsolva</p>
+            <div class="spotify-player-container">
+                <iframe 
+                    id="spotify-player"
+                    src="https://open.spotify.com/embed/playlist/3eiBcxJpxfbc4s7Qi9IXru?utm_source=generator&si=13212ef0c4ea4c97" 
+                    width="100%" 
+                    height="100%" 
+                    frameBorder="0" 
+                    allowfullscreen="" 
+                    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+                    loading="lazy">
+                </iframe>
             </div>
         </div>
 
-        <!-- 1. sor, 3. és 4. oszlop: Két kártya széles Friss Hírek Kártya -->
+        <!-- 6. Két kártya széles Friss Hírek Kártya (INDEX.HU - 5 Szalagcím) -->
         <div class="news-card-wide" id="news-trigger-card" onclick="expandNewsCard()">
             <div class="news-header">
                 <h3><i class="fa-solid fa-newspaper"></i> Friss Hírek</h3>
-                <span class="news-source">HVG</span>
+                <span class="news-source">INDEX</span>
             </div>
             <div class="news-list-wide" id="news-list">
                 <div class="news-loading">Hírek betöltése...</div>
-            </div>
-        </div>
-
-        <!-- 2. sor, 1. oszlop: Google Naptár Teendők -->
-        <div class="tasks-card">
-            <div class="tasks-header">
-                <h3><i class="fa-solid fa-calendar-days"></i> Mai teendők</h3>
-                <span id="task-count">0 db</span>
-            </div>
-            <div class="tasks-list" id="tasks-list">
-                <div class="task-loading">Naptár adatok betöltése...</div>
-            </div>
-        </div>
-
-        <!-- 2. sor, 2. oszlop: Fűtés Kártya -->
-        <div class="device-card" onclick="toggleDevice(this)">
-            <div class="device-icon">
-                <i class="fa-solid fa-fire"></i>
-            </div>
-            <div class="device-info">
-                <h3>Fűtés Rendszer</h3>
-                <p class="status-text">Kikapcsolva</p>
-            </div>
-        </div>
-
-        <!-- 2. sor, 3. oszlop: Redőnyök Kártya -->
-        <div class="device-card" onclick="toggleDevice(this)">
-            <div class="device-icon">
-                <i class="fa-solid fa-blinds"></i>
-            </div>
-            <div class="device-info">
-                <h3>Redőnyök</h3>
-                <p class="status-text">Kikapcsolva</p>
-            </div>
-        </div>
-
-        <!-- 2. sor, 4. oszlop: Helyiségek Hőmérséklete Kártya -->
-        <div class="device-card temperature-card">
-            <div class="device-icon">
-                <i class="fa-solid fa-temperature-half"></i>
-            </div>
-            <div class="device-info">
-                <h3>Hőmérsékletek</h3>
-            </div>
-            <div class="temp-rooms-list">
-                <div class="temp-room-item">
-                    <span>Nappali</span>
-                    <span id="temp-nappali">22.5 °C</span>
-                </div>
-                <div class="temp-room-item">
-                    <span>Hálószoba</span>
-                    <span id="temp-haloszoba">20.0 °C</span>
-                </div>
-                <div class="temp-room-item">
-                    <span>Vendégszoba</span>
-                    <span id="temp-vendegszoba">21.0 °C</span>
-                </div>
             </div>
         </div>
     </main>
