@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okos Otthon Dashboard</title>
+    <!-- FontAwesome ikonok -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Saját CSS stíluslap -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <i class="fa-solid fa-house-chimney"></i>
+            <h1>Krisztina & Tibor otthona</h1>
+        </div>
+        <div class="header-right-group">
+            <!-- Hangvezérlés Mikrofon Gomb -->
+            <button class="mic-btn" id="mic-btn" onclick="toggleVoiceControl()" title="Hangvezérlés ki/bekapcsolása">
+                <i class="fa-solid fa-microphone" id="mic-icon"></i>
+            </button>
+            <div class="header-datetime">
+                <div id="date">--.--.--. ------</div>
+                <div id="clock">--:--</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- 1. sor, 1. oszlop: iOS Stílusú Időjárás Widget -->
+        <div class="weather-card" id="weather-widget">
+            <div class="weather-header">
+                <div class="location-container">
+                    <span id="city-name">Budapest</span>
+                    <button class="location-btn" onclick="openCitySelector(event)">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </button>
+                </div>
+                <div class="weather-icon-box">
+                    <i class="fa-solid fa-sun" id="weather-icon"></i>
+                    <div class="temp-range">
+                        <span><i class="fa-solid fa-arrow-up"></i> <span id="temp-max">--</span>°</span>
+                        <span><i class="fa-solid fa-arrow-down"></i> <span id="temp-min">--</span>°</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="current-temp-container">
+                <span id="current-temp">--</span>°
+            </div>
+
+            <div class="weather-details">
+                <div class="detail-item">
+                    <span class="detail-label">Csapadék</span>
+                    <span class="detail-value" id="precipitation">0 mm</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Szél</span>
+                    <span class="detail-value" id="wind-speed">0 km/h</span>
+                </div>
+            </div>
+
+            <!-- Városválasztó felugró panel -->
+            <div class="city-selector-overlay" id="city-overlay" style="display: none;">
+                <input type="text" id="city-input" placeholder="Település neve..." onkeypress="handleCityKeyPress(event)">
+                <div class="overlay-buttons">
+                    <button onclick="searchCity()">Keresés</button>
+                    <button onclick="closeCitySelector()" class="cancel-btn">Mégse</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. sor, 2. oszlop: Lámpák Kártya (Morphing animációval) -->
+        <div class="device-card light-trigger-card" id="lights-trigger-card" onclick="expandLightsCard()">
+            <div class="device-icon">
+                <i class="fa-solid fa-lightbulb"></i>
+            </div>
+            <div class="device-info">
+                <h3>Lámpák</h3>
+                <p id="lights-summary-status">Minden lámpa lekapcsolva</p>
+            </div>
+        </div>
+
+        <!-- 1. sor, 3. és 4. oszlop: Két kártya széles Friss Hírek Kártya -->
+        <div class="news-card-wide" id="news-trigger-card" onclick="expandNewsCard()">
+            <div class="news-header">
+                <h3><i class="fa-solid fa-newspaper"></i> Friss Hírek</h3>
+                <span class="news-source">HVG</span>
+            </div>
+            <div class="news-list-wide" id="news-list">
+                <div class="news-loading">Hírek betöltése...</div>
+            </div>
+        </div>
+
+        <!-- 2. sor, 1. oszlop: Google Naptár Teendők -->
+        <div class="tasks-card">
+            <div class="tasks-header">
+                <h3><i class="fa-solid fa-calendar-days"></i> Mai teendők</h3>
+                <span id="task-count">0 db</span>
+            </div>
+            <div class="tasks-list" id="tasks-list">
+                <div class="task-loading">Naptár adatok betöltése...</div>
+            </div>
+        </div>
+
+        <!-- 2. sor, 2. oszlop: Fűtés Kártya -->
+        <div class="device-card" onclick="toggleDevice(this)">
+            <div class="device-icon">
+                <i class="fa-solid fa-fire"></i>
+            </div>
+            <div class="device-info">
+                <h3>Fűtés Rendszer</h3>
+                <p class="status-text">Kikapcsolva</p>
+            </div>
+        </div>
+
+        <!-- 2. sor, 3. oszlop: Redőnyök Kártya -->
+        <div class="device-card" onclick="toggleDevice(this)">
+            <div class="device-icon">
+                <i class="fa-solid fa-blinds"></i>
+            </div>
+            <div class="device-info">
+                <h3>Redőnyök</h3>
+                <p class="status-text">Kikapcsolva</p>
+            </div>
+        </div>
+
+        <!-- 2. sor, 4. oszlop: Helyiségek Hőmérséklete Kártya -->
+        <div class="device-card temperature-card">
+            <div class="device-icon">
+                <i class="fa-solid fa-temperature-half"></i>
+            </div>
+            <div class="device-info">
+                <h3>Hőmérsékletek</h3>
+            </div>
+            <div class="temp-rooms-list">
+                <div class="temp-room-item">
+                    <span>Nappali</span>
+                    <span id="temp-nappali">22.5 °C</span>
+                </div>
+                <div class="temp-room-item">
+                    <span>Hálószoba</span>
+                    <span id="temp-haloszoba">20.0 °C</span>
+                </div>
+                <div class="temp-room-item">
+                    <span>Vendégszoba</span>
+                    <span id="temp-vendegszoba">21.0 °C</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sötétítő Háttér Réteg -->
+    <div class="modal-backdrop" id="modal-backdrop"></div>
+
+    <!-- Dinamikusan kiterülő (Morphing) Panel: Lámpák -->
+    <div class="expanded-card" id="expanded-card">
+        <div class="modal-header">
+            <h2><i class="fa-solid fa-lightbulb"></i> Lámpák Helyiségenként</h2>
+            <button class="close-modal-btn" onclick="collapseLightsCard()">&times;</button>
+        </div>
+        <div class="modal-grid">
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-couch sub-icon"></i>
+                <div class="sub-info">
+                    <h4>Nappali</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-utensils sub-icon"></i>
+                <div class="sub-info">
+                    <h4>Konyha</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-user-group sub-icon"></i>
+                <div class="sub-info">
+                    <h4>Vendégszoba</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-bed sub-icon"></i>
+                <div class="sub-info">
+                    <h4>Hálószoba</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-bath sub-icon"></i>
+                <div class="sub-info">
+                    <h4>Fürdő</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+            <div class="sub-device-card" onclick="toggleSubDevice(this)">
+                <i class="fa-solid fa-toilet sub-icon"></i>
+                <div class="sub-info">
+                    <h4>WC</h4>
+                    <p class="sub-status">Kikapcsolva</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dinamikusan kiterülő (Morphing) Panel: Hírek Részletei -->
+    <div class="expanded-card" id="expanded-news-card">
+        <div class="modal-header">
+            <h2><i class="fa-solid fa-newspaper"></i> Legfrissebb Hírek Részletesen</h2>
+            <button class="close-modal-btn" onclick="collapseNewsCard()">&times;</button>
+        </div>
+        <div class="news-modal-content" id="news-modal-content">
+            <div class="news-loading">Hírek részleteinek betöltése...</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
