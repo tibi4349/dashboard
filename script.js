@@ -640,3 +640,12 @@ setInterval(fetchGoogleCalendarEvents, 1000);
 setInterval(fetchNews, 900000);
 // Hőmérséklet frissítése 10 másodpercenként
 setInterval(fetchRoomTemperatures, 10000);
+
+// --- Service Worker Regisztráció PWA-hoz ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then((reg) => console.log('Service Worker regisztrálva:', reg.scope))
+            .catch((err) => console.error('Service Worker regisztrációs hiba:', err));
+    });
+}
