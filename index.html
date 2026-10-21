@@ -2,8 +2,17 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krisztina & Tibor otthona</title>
+    
+    <!-- PWA & Mobil Beállítások -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Otthon">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/25/25694.png">
+
     <!-- FontAwesome ikonok -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Saját CSS stíluslap -->
@@ -157,7 +166,7 @@
             </div>
         </div>
 
-        <!-- 6. Két kártya széles Friss Hírek Kártya (INDEX.HU - 5 Szalagcím) -->
+        <!-- 6. Két kártya széles Friss Hírek Kártya (INDEX.HU) -->
         <div class="news-card-wide" id="news-trigger-card" onclick="expandNewsCard()">
             <div class="news-header">
                 <h3><i class="fa-solid fa-newspaper"></i> Friss Hírek</h3>
