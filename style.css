@@ -119,100 +119,181 @@ header h1 {
     overflow-y: auto;
 }
 
-/* --- iOS Időjárás Widget Stílus --- */
-.weather-card {
+/* --- iOS Időjárás Widget Stílus (1x1 Kártyás Helykitöltés) --- */
+.weather-card.ios-weather {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
     border-radius: 20px;
-    padding: 16px 20px;
-    position: relative;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
     overflow: hidden;
-    transition: background 0.5s ease;
 }
 
-.weather-card.day-mode {
-    background: linear-gradient(135deg, #1e3a8a, #2563eb);
-}
-
-.weather-card.night-mode {
-    background: linear-gradient(135deg, #0b1329, #1e1b4b);
-}
-
-.weather-header {
+.ios-header-top {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
 }
 
 .location-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
+    cursor: pointer;
 }
 
 #city-name {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    letter-spacing: 0.5px;
+    color: #ffffff;
 }
 
-.location-btn {
-    background: none;
-    border: none;
+.location-icon {
+    font-size: 0.75rem;
+    transform: rotate(45deg);
     color: rgba(255, 255, 255, 0.8);
-    font-size: 0.9rem;
-    cursor: pointer;
-    padding: 4px;
 }
 
-.weather-icon-box {
+.ios-condition-box {
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 #weather-icon {
-    font-size: 1.3rem;
-    color: #fde047;
+    color: #38bdf8;
 }
 
-.temp-range {
-    font-size: 0.8rem;
-    font-weight: 500;
+.ios-header-main {
     display: flex;
-    gap: 6px;
-    color: rgba(255, 255, 255, 0.9);
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 2px;
 }
 
-.current-temp-container {
-    font-size: 2.8rem;
+.ios-current-temp {
+    font-size: 2.1rem;
     font-weight: 300;
     line-height: 1;
+}
+
+.ios-temp-range {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.75);
+    display: flex;
+    gap: 6px;
+}
+
+.ios-weather-alert {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    border-radius: 6px;
+    padding: 3px 6px;
     margin: 4px 0;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #fef08a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.weather-details {
+.ios-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 3px 0;
+}
+
+/* Óránkénti Sáv */
+.ios-hourly-forecast {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 0;
+}
+
+.ios-hourly-item {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 2px;
-    font-size: 0.8rem;
+    font-size: 0.68rem;
 }
 
-.detail-item {
+.ios-hourly-time {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.ios-hourly-icon {
+    font-size: 0.8rem;
+    color: #38bdf8;
+}
+
+.ios-hourly-temp {
+    font-weight: 600;
+}
+
+/* Napi Sávok és Hőmérsékleti Vonal */
+.ios-daily-forecast {
     display: flex;
     flex-direction: column;
+    gap: 3px;
 }
 
-.detail-label {
-    font-weight: 600;
+.ios-daily-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.ios-day-name {
+    width: 24px;
     color: rgba(255, 255, 255, 0.9);
 }
 
-.detail-value {
-    color: rgba(255, 255, 255, 0.75);
+.ios-day-icon {
+    width: 18px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #38bdf8;
+}
+
+.ios-day-min {
+    width: 20px;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.ios-day-max {
+    width: 20px;
+    text-align: right;
+    font-weight: 600;
+}
+
+.ios-temp-bar-container {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+    margin: 0 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.ios-temp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #38bdf8, #34d399);
+    border-radius: 2px;
 }
 
 .city-selector-overlay {
@@ -307,7 +388,7 @@ header h1 {
     color: #a7f3d0;
 }
 
-/* --- Spotify Zenelejátszó Kártya & Lejátszási Lista Váltó --- */
+/* --- Spotify Zenelejátszó Kártya --- */
 .music-card {
     background-color: var(--card-bg);
     border-radius: 20px;
@@ -371,7 +452,7 @@ header h1 {
     border-radius: 10px;
 }
 
-/* --- Széles Hírek Kártya (Span 2 - Index.hu 5 Szalagcím) --- */
+/* --- Széles Hírek Kártya (Span 2) --- */
 .news-card-wide {
     grid-column: span 2;
     background-color: var(--card-bg);
@@ -515,7 +596,7 @@ header h1 {
     font-weight: 600;
 }
 
-/* --- Széles Teendők Kártya (Span 2) & Kétoszlopos Elrendezés --- */
+/* --- Széles Teendők Kártya (Span 2) --- */
 .tasks-card-wide {
     grid-column: span 2;
     background-color: var(--card-bg);
@@ -611,7 +692,7 @@ header h1 {
     margin-top: 25px;
 }
 
-/* --- Dinamikus Morphing Animációs Stílusok --- */
+/* --- Morphing Animációs Stílusok --- */
 .light-trigger-card {
     position: relative;
 }
