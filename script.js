@@ -11,52 +11,23 @@ function switchPlaylist(playlistId, btnElement) {
     }
 }
 
-// --- Időjárás Modul (Open-Meteo API cache-bustinggal) ---
-let currentCity = localStorage.getItem('selectedCity') || 'Budapest';
-let lastWeatherCode = 0;
+// --- iOS Időjárás Modul (Open-Meteo API kibővített adatokkal) ---
+let currentCity = localStorage.getItem('selectedCity') || 'Vecsés';
 
 function isDaytime() {
     const hours = new Date().getHours();
     return hours >= 6 && hours < 18;
 }
 
-function checkDayNightTheme() {
-    const weatherCard = document.getElementById('weather-widget');
-    
-    if (isDaytime()) {
-        weatherCard.classList.add('day-mode');
-        weatherCard.classList.remove('night-mode');
-    } else {
-        weatherCard.classList.add('night-mode');
-        weatherCard.classList.remove('day-mode');
-    }
-    
-    updateWeatherIcon(lastWeatherCode);
-}
-
-function updateWeatherIcon(code) {
-    lastWeatherCode = code;
-    const isDay = isDaytime();
-    let iconClass = 'fa-cloud';
-
-    if (code === 0) {
-        iconClass = isDay ? 'fa-sun' : 'fa-moon';
-    } else if (code >= 1 && code <= 3) {
-        iconClass = isDay ? 'fa-cloud-sun' : 'fa-cloud-moon';
-    } else if (code >= 45 && code <= 48) {
-        iconClass = 'fa-smog';
-    } else if (code >= 51 && code <= 67) {
-        iconClass = 'fa-cloud-rain';
-    } else if (code >= 71 && code <= 77) {
-        iconClass = 'fa-snowflake';
-    } else if (code >= 80 && code <= 82) {
-        iconClass = 'fa-cloud-showers-heavy';
-    } else if (code >= 95) {
-        iconClass = 'fa-bolt';
-    }
-
-    const iconElement = document.getElementById('weather-icon');
-    iconElement.className = `fa-solid ${iconClass}`;
+function getWeatherCondition(code, isDay = true) {
+    if (code === 0) return { text: 'Derült', icon: isDay ? 'fa-sun' : 'fa-moon' };
+    if (code >= 1 && code <= 3) return { text: 'Felhős', icon: isDay ? 'fa-cloud-sun' : 'fa-cloud-moon' };
+    if (code >= 45 && code <= 48) return { text: 'Ködös', icon: 'fa-smog' };
+    if (code >= 51 && code <= 67) return { text: 'Esős', icon: 'fa-cloud-rain' };
+    if (code >= 71 && code <= 77) return { text: 'Havazás', icon: 'fa-snowflake' };
+    if (code >= 80 && code <= 82) return { text: 'Zápor', icon: 'fa-cloud-showers-heavy' };
+    if (code >= 95) return { text: 'Zivatar', icon: 'fa-bolt' };
+    return { text: 'Felhős', icon: 'fa-cloud' };
 }
 
 async function fetchWeather(cityName) {
@@ -75,18 +46,89 @@ async function fetchWeather(cityName) {
         const displayName = location.name;
 
         const cacheBuster = `&_t=${new Date().getTime()}`;
-        const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto${cacheBuster}`);
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto${cacheBuster}`;
+        
+        const weatherRes = await fetch(weatherUrl);
         const weatherData = await weatherRes.json();
 
+        // 1. Fejléc Frissítés
         document.getElementById('city-name').textContent = displayName;
         document.getElementById('current-temp').textContent = Math.round(weatherData.current.temperature_2m);
         document.getElementById('temp-max').textContent = Math.round(weatherData.daily.temperature_2m_max[0]);
         document.getElementById('temp-min').textContent = Math.round(weatherData.daily.temperature_2m_min[0]);
-        document.getElementById('precipitation').textContent = `${weatherData.current.precipitation} mm`;
-        document.getElementById('wind-speed').textContent = `${Math.round(weatherData.current.wind_speed_10m)} km/h`;
 
-        checkDayNightTheme();
-        updateWeatherIcon(weatherData.current.weather_code);
+        const condition = getWeatherCondition(weatherData.current.weather_code, isDaytime());
+        document.getElementById('weather-condition-text').textContent = condition.text;
+        document.getElementById('weather-icon').className = `fa-solid ${condition.icon}`;
+
+        // Szél Figyelmeztetés
+        const alertBox = document.getElementById('weather-alert-box');
+        const windSpeed = Math.round(weatherData.current.wind_speed_10m);
+        if (windSpeed > 20) {
+            alertBox.style.display = 'flex';
+            document.getElementById('weather-alert-text').textContent = `Sárga figyelmeztetés: Szél (${windSpeed} km/h)`;
+        } else {
+            alertBox.style.display = 'none';
+        }
+
+        // 2. Óránkénti Előrejelzés (Következő 5 óra)
+        const hourlyContainer = document.getElementById('hourly-forecast-container');
+        hourlyContainer.innerHTML = '';
+        
+        const currentHour = new Date().getHours();
+        for (let i = 0; i < 5; i++) {
+            const index = currentHour + i;
+            const hourTime = index % 24;
+            const hourTemp = Math.round(weatherData.hourly.temperature_2m[index]);
+            const hourCode = weatherData.hourly.weather_code[index];
+            const hourCond = getWeatherCondition(hourCode, hourTime >= 6 && hourTime < 18);
+
+            const item = document.createElement('div');
+            item.className = 'ios-hourly-item';
+            item.innerHTML = `
+                <span class="ios-hourly-time">${i === 0 ? 'Most' : hourTime}</span>
+                <i class="fa-solid ${hourCond.icon} ios-hourly-icon"></i>
+                <span class="ios-hourly-temp">${hourTemp}°</span>
+            `;
+            hourlyContainer.appendChild(item);
+        }
+
+        // 3. Napi Előrejelzés Színes Vonalakkal (4 Nap)
+        const dailyContainer = document.getElementById('daily-forecast-container');
+        dailyContainer.innerHTML = '';
+
+        const dayNames = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
+        
+        let globalMin = Math.min(...weatherData.daily.temperature_2m_min.slice(0, 4));
+        let globalMax = Math.max(...weatherData.daily.temperature_2m_max.slice(0, 4));
+        let totalRange = globalMax - globalMin || 1;
+
+        for (let i = 0; i < 4; i++) {
+            const date = new Date();
+            date.setDate(date.getDate() + i);
+            const dayName = i === 0 ? 'Ma' : dayNames[date.getDay()];
+            
+            const minTemp = Math.round(weatherData.daily.temperature_2m_min[i]);
+            const maxTemp = Math.round(weatherData.daily.temperature_2m_max[i]);
+            const dayCode = weatherData.daily.weather_code[i];
+            const dayCond = getWeatherCondition(dayCode, true);
+
+            const leftPercent = ((minTemp - globalMin) / totalRange) * 100;
+            const widthPercent = Math.max(((maxTemp - minTemp) / totalRange) * 100, 15);
+
+            const row = document.createElement('div');
+            row.className = 'ios-daily-row';
+            row.innerHTML = `
+                <span class="ios-day-name">${dayName}</span>
+                <i class="fa-solid ${dayCond.icon} ios-day-icon"></i>
+                <span class="ios-day-min">${minTemp}°</span>
+                <div class="ios-temp-bar-container">
+                    <div class="ios-temp-bar-fill" style="margin-left: ${leftPercent}%; width: ${widthPercent}%;"></div>
+                </div>
+                <span class="ios-day-max">${maxTemp}°</span>
+            `;
+            dailyContainer.appendChild(row);
+        }
 
         localStorage.setItem('selectedCity', displayName);
 
@@ -212,27 +254,39 @@ async function fetchGoogleCalendarEvents() {
     }
 }
 
-// --- Hírek Modul (INDEX.HU RSS Feed API - 5 Szalagcím) ---
+// --- Hírek Modul (AllOrigins RAW XML lekérdezés - 403 / CORS mentesen) ---
 let cachedNews = [];
 
 async function fetchNews() {
     const listEl = document.getElementById('news-list');
     const modalContentEl = document.getElementById('news-modal-content');
-    
     const rssUrl = 'https://index.hu/24ora/rss/';
-    const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
 
     try {
-        const res = await fetch(apiUrl);
-        const data = await res.json();
+        let items = [];
 
-        if (data.status === 'ok' && data.items) {
-            cachedNews = data.items.slice(0, 5);
+        const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}&_t=${Date.now()}`);
+        const xmlText = await res.text();
+        
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+        const xmlItems = xmlDoc.querySelectorAll("item");
 
+        xmlItems.forEach(item => {
+            const title = item.querySelector("title")?.textContent || '';
+            const rawDesc = item.querySelector("description")?.textContent || '';
+            const cleanDesc = rawDesc.replace(/<[^>]*>?/gm, '');
+            if (title) {
+                items.push({ title: title, description: cleanDesc || 'Nincs leírás.' });
+            }
+        });
+
+        if (items.length > 0) {
+            cachedNews = items.slice(0, 5);
             listEl.innerHTML = '';
             modalContentEl.innerHTML = '';
 
-            cachedNews.forEach((item, index) => {
+            cachedNews.forEach(item => {
                 const newsDiv = document.createElement('div');
                 newsDiv.className = 'news-item-wide';
                 newsDiv.textContent = item.title;
@@ -240,18 +294,16 @@ async function fetchNews() {
 
                 const modalDiv = document.createElement('div');
                 modalDiv.className = 'news-modal-item';
-                
-                const cleanDescription = item.description ? item.description.replace(/<[^>]*>?/gm, '') : 'Nincs elérhető leírás.';
-                
                 modalDiv.innerHTML = `
                     <h4>${escapeHtml(item.title)}</h4>
-                    <p>${escapeHtml(cleanDescription)}</p>
+                    <p>${escapeHtml(item.description)}</p>
                 `;
                 modalContentEl.appendChild(modalDiv);
             });
         } else {
             listEl.innerHTML = '<div class="news-empty">Hírek nem érhetők el</div>';
         }
+
     } catch (error) {
         console.error('Hiba a hírek lekérésekor:', error);
         listEl.innerHTML = '<div class="news-empty">Sikertelen betöltés</div>';
@@ -283,7 +335,6 @@ if (SpeechRecognition) {
         const transcript = event.results[lastResultIndex][0].transcript.toLowerCase();
         console.log('Meghallott szöveg:', transcript);
 
-        // Zenelejátszó & Lejátszási lista parancsok
         if (transcript.includes('zene indítás') || transcript.includes('lejátszás') || transcript.includes('zene start')) {
             controlSpotify('play');
             speakText('Zene elindítva.');
@@ -304,11 +355,9 @@ if (SpeechRecognition) {
             switchPlaylist('37i9dQZF1DXkWgt9O6q3Il', document.querySelectorAll('.playlist-btn')[2]);
             speakText('Lofi lista kiválasztva.');
         }
-        // Holnapi teendők
         else if (transcript.includes('holnapi teendő') || transcript.includes('holnapi naptár') || transcript.includes('holnapi feladat') || transcript.includes('mi lesz holnap')) {
             speakTomorrowTasks();
         } 
-        // Mai teendők (vagy általános teendő kérés)
         else if (transcript.includes('mai teendő') || transcript.includes('mai naptár') || transcript.includes('mai feladat') || transcript.includes('mi van ma') || transcript.includes('teendő') || transcript.includes('naptár') || transcript.includes('feladat')) {
             speakTodayTasks();
         } 
@@ -415,13 +464,12 @@ function speakTomorrowTasks() {
 function speakWeather() {
     const city = document.getElementById('city-name').textContent;
     const temp = document.getElementById('current-temp').textContent;
-    const precipitation = document.getElementById('precipitation').textContent;
-    const wind = document.getElementById('wind-speed').textContent;
+    const cond = document.getElementById('weather-condition-text').textContent;
 
     if (temp === '--') {
         speakText('Az időjárási adatok még nem töltődtek be.');
     } else {
-        speakText(`${city} településen jelenleg ${temp} fok van. A csapadék ${precipitation}, a szél sebessége ${wind}.`);
+        speakText(`${city} településen jelenleg ${temp} fok van, az időjárás ${cond}.`);
     }
 }
 
@@ -621,8 +669,6 @@ function updateDateTime() {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     
     document.getElementById('clock').textContent = `${hours}:${minutes}`;
-
-    checkDayNightTheme();
 }
 
 // --- Inicializálás és Automatikus Frissítés ---
@@ -640,12 +686,3 @@ setInterval(fetchGoogleCalendarEvents, 1000);
 setInterval(fetchNews, 900000);
 // Hőmérséklet frissítése 10 másodpercenként
 setInterval(fetchRoomTemperatures, 10000);
-
-// --- Service Worker Regisztráció PWA-hoz ---
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-            .then((reg) => console.log('Service Worker regisztrálva:', reg.scope))
-            .catch((err) => console.error('Service Worker regisztrációs hiba:', err));
-    });
-}
