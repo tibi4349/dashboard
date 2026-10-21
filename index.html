@@ -4,14 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Krisztina & Tibor otthona</title>
-    
-    <!-- PWA & Mobil Beállítások -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Otthon">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/25/25694.png">
 
     <!-- FontAwesome ikonok -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -102,37 +94,46 @@
             </div>
         </div>
 
-        <!-- 4. iOS Stílusú Időjárás Widget -->
-        <div class="weather-card" id="weather-widget">
-            <div class="weather-header">
-                <div class="location-container">
-                    <span id="city-name">Budapest</span>
-                    <button class="location-btn" onclick="openCitySelector(event)">
-                        <i class="fa-solid fa-location-dot"></i>
-                    </button>
+        <!-- 4. iOS Stílusú Időjárás Widget (Kompakt 1x1 Kártyás Elrendezés) -->
+        <div class="weather-card ios-weather" id="weather-widget">
+            <div class="ios-weather-header">
+                <div class="ios-header-top">
+                    <div class="location-container" onclick="openCitySelector(event)">
+                        <span id="city-name">Vecsés</span>
+                        <i class="fa-solid fa-location-arrow location-icon"></i>
+                    </div>
+                    <div class="ios-condition-box">
+                        <i class="fa-solid fa-cloud" id="weather-icon"></i>
+                        <span id="weather-condition-text">Felhős</span>
+                    </div>
                 </div>
-                <div class="weather-icon-box">
-                    <i class="fa-solid fa-sun" id="weather-icon"></i>
-                    <div class="temp-range">
-                        <span><i class="fa-solid fa-arrow-up"></i> <span id="temp-max">--</span>°</span>
-                        <span><i class="fa-solid fa-arrow-down"></i> <span id="temp-min">--</span>°</span>
+                <div class="ios-header-main">
+                    <div class="ios-current-temp"><span id="current-temp">16</span>°</div>
+                    <div class="ios-temp-range">
+                        <span>Max: <span id="temp-max">21</span>°</span>
+                        <span>Min: <span id="temp-min">7</span>°</span>
                     </div>
                 </div>
             </div>
 
-            <div class="current-temp-container">
-                <span id="current-temp">--</span>°
+            <!-- Figyelmeztetés Sáv -->
+            <div class="ios-weather-alert" id="weather-alert-box" style="display: none;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="weather-alert-text">Sárga figyelmeztetés: Szél</span>
             </div>
 
-            <div class="weather-details">
-                <div class="detail-item">
-                    <span class="detail-label">Csapadék</span>
-                    <span class="detail-value" id="precipitation">0 mm</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Szél</span>
-                    <span class="detail-value" id="wind-speed">0 km/h</span>
-                </div>
+            <div class="ios-divider"></div>
+
+            <!-- Óránkénti Előrejelzés -->
+            <div class="ios-hourly-forecast" id="hourly-forecast-container">
+                <!-- JS tölti fel -->
+            </div>
+
+            <div class="ios-divider"></div>
+
+            <!-- Napi Előrejelzés Színes Sávokkal -->
+            <div class="ios-daily-forecast" id="daily-forecast-container">
+                <!-- JS tölti fel -->
             </div>
 
             <!-- Városválasztó felugró panel -->
@@ -159,7 +160,6 @@
                     width="100%" 
                     height="100%" 
                     frameBorder="0" 
-                    allowfullscreen="" 
                     allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
                     loading="lazy">
                 </iframe>
